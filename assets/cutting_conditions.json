@@ -1,0 +1,70 @@
+{
+  "brands": [
+    {
+      "id": "jongen",
+      "name": "Jongen",
+      "specialty": "Spécialiste fraisage"
+    },
+    {
+      "id": "iscar",
+      "name": "Iscar",
+      "specialty": "Tous procédés"
+    },
+    {
+      "id": "placeholder",
+      "name": "+ Ajouter un fabricant",
+      "specialty": ""
+    }
+  ],
+  "materials": [
+    {"id": "p1", "name": "Acier non allié (P1)"},
+    {"id": "p2", "name": "Acier basse légé (P2)"},
+    {"id": "p3", "name": "Acier inoxydable (M1)"},
+    {"id": "p4", "name": "Fonte (K1)"},
+    {"id": "p5", "name": "Aluminium (N1)"},
+    {"id": "p6", "name": "Titane (S1)"},
+    {"id": "p7", "name": "Acier trempé (H1)"}
+  ],
+  "operations": {
+    "tournage": [
+      {"id": "chariotage", "name": "Chariotage"},
+      {"id": "dressage", "name": "Dressage"},
+      {"id": "chariotage_profile", "name": "Chariotage de profil"},
+      {"id": "saignee", "name": "Saignée"},
+      {"id": "filetage", "name": "Filetage"}
+    ],
+    "fraisage": [
+      {"id": "surfacage", "name": "Surfaçage"},
+      {"id": "rainurage", "name": "Rainurage"},
+      {"id": "pochage", "name": "Pochage"},
+      {"id": "copiage", "name": "Copiage"},
+      {"id": "epaulement", "name": "Épaulement"}
+    ],
+    "percage": [
+      {"id": "perçage_centre", "name": "Perçage centré"},
+      {"id": "perçage_profond", "name": "Perçage profond"},
+      {"id": "alésage", "name": "Alésage"},
+      {"id": "lamage", "name": "Lamage"}
+    ],
+    "taraudage": [
+      {"id": "taraudage_aveugle", "name": "Taraudage aveugle"},
+      {"id": "taraudage_debouchant", "name": "Taraudage débouchant"},
+      {"id": "taraudage_filet", "name": "Filetage au filet"}
+    ]
+  },
+  "conditions": {
+    "jongen_surfacage_p1": {"vc": 180, "fz": 0.15, "ap": 2.0, "ae": 0.7},
+    "jongen_rainurage_p1": {"vc": 140, "fz": 0.10, "ap": 1.5, "ae": 1.0},
+    "jongen_surfacage_m1": {"vc": 90, "fz": 0.08, "ap": 1.0, "ae": 0.5},
+    "jongen_surfacage_k1": {"vc": 220, "fz": 0.20, "ap": 2.5, "ae": 0.8},
+    "jongen_surfacage_n1": {"vc": 450, "fz": 0.25, "ap": 3.0, "ae": 1.0},
+    "iscar_chariotage_p1": {"vc": 220, "f": 0.25, "ap": 2.5},
+    "iscar_chariotage_p2": {"vc": 200, "f": 0.22, "ap": 2.2},
+    "iscar_chariotage_m1": {"vc": 110, "f": 0.15, "ap": 1.5},
+    "iscar_dressage_p1": {"vc": 240, "f": 0.18, "ap": 1.0},
+    "iscar_percage_centre_p1": {"vc": 120, "f": 0.15},
+    "iscar_percage_centre_k1": {"vc": 180, "f": 0.12},
+    "iscar_taraudage_debouchant_p1": {"vc": 25, "pitch": "M10"},
+    "iscar_taraudage_debouchant_m1": {"vc": 12, "pitch": "M10"}
+  }
+}
