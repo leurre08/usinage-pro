@@ -1,36 +1,95 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import '../services/cutting_data_service.dart';
+import 'package:image_picker/image_picker.dart';
 
-class WorkflowScreen extends StatefulWidget {
-  const WorkflowScreen({super.key});
+class PhotoScreen extends StatefulWidget {
+  const PhotoScreen({super.key});
 
   @override
-  State<WorkflowScreen> createState() => _WorkflowScreenState();
+  State<PhotoScreen> createState() => _PhotoScreenState();
 }
 
-class _WorkflowScreenState extends State<WorkflowScreen> {
-  int _step = 0;
-  String? _brandId;
-  String? _materialId;
-  String? _materialName;
-  Map<String, dynamic>?# 🎉 Excellent ! La structure de base est complète
+class _PhotoScreenState extends State<PhotoScreen> {
+  File? _image;
+  final List<Offset> _points = [];
 
-Je vois parfaitement :
-- ✅ `lib/main.dart` 
-- ✅ `lib/services/cutting_data_service.dart`
+  Future<void> _takePhoto() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.camera);
+    if (file != null) {
+      setState(() {
+        _image = File(file.path);
+        _points.clear();
+      });
+    }
+  }
 
-La fondation du projet est solide. On passe maintenant aux **écrans de l'application**.
+  void _onTap(TapDownDetails details) {
+    if (_image != null) {
+      setState(() => _points.add(details.localPosition));
+    }
+  }
 
----
-
-##  Tâche #5 : Créer l'écran de prise de photo
-
-C'est le premier écran que l'utilisateur verra. Il permet de photographier l'outil et d'annoter la photo.
-
-### Comment faire :
-
-1. Revenez à la racine du projet (flèche ← jusqu'à voir les fichiers)
-2. Appuyez sur **Code**
-3. Appuyez sur les **3 petits points (⋮)** en haut à droite
-4. Choisissez **"Create file"**
-5. Nom du fichier :
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('1/4 - Photo de l\'outil'),
+        centerTitle: true,
+      ),
+      body: GestureDetector(
+        onTapDown: _image != null ? _onTap : null,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Center(
+              child: _image == null
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.camera_alt_outlined,
+                          size: 100,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Appuyez sur la caméra pour prendre une photo',
+                          style: TextStyle(color: Colors.grey[600]),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    )
+                  : Image.file(_image!, fit: BoxFit.contain),
+            ),
+            ..._points.map(
+              (p) => Positioned(
+                left: p.dx - 8,
+                top: p.dy - 8,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.7),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            onPressed: _takePhoto,
+            child: const Icon(Icons.camera_alt),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            onPressed: _image == null
+                ? null
+                : () {
+                    ScaffoldMessenger.of(context).showSnackBar
