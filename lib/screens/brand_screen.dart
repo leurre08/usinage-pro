@@ -24,7 +24,10 @@ class BrandScreen extends StatelessWidget {
             subtitle: Text(brand['spec']!),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const MaterialScreen()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => MaterialScreen(brandId: brand['id']!)),
+              );
             },
           );
         },
