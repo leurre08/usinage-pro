@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'material_screen.dart';
 
 class BrandScreen extends StatelessWidget {
   const BrandScreen({super.key});
@@ -12,10 +13,7 @@ class BrandScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('2/4 - Marque de l\'outil'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('2/4 - Marque de l\'outil'), centerTitle: true),
       body: ListView.builder(
         itemCount: brands.length,
         itemBuilder: (context, index) {
@@ -26,9 +24,7 @@ class BrandScreen extends StatelessWidget {
             subtitle: Text(brand['spec']!),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Marque ${brand['name']} sélectionnée. Écran matière à créer.')),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const MaterialScreen()));
             },
           );
         },
