@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'operation_screen.dart';
 
 class MaterialScreen extends StatelessWidget {
-  const MaterialScreen({super.key});
+  final String brandId;
+  const MaterialScreen({super.key, required this.brandId});
 
   final List<Map<String, String>> materials = const [
     {'id': 'p1', 'name': 'Acier non allié (P1)'},
@@ -27,7 +28,16 @@ class MaterialScreen extends StatelessWidget {
             title: Text(mat['name']!),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const OperationScreen()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => OperationScreen(
+                    brandId: brandId,
+                    materialId: mat['id']!,
+                    materialName: mat['name']!,
+                  ),
+                ),
+              );
             },
           );
         },
