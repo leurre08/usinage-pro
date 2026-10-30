@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'screens/photo_screen.dart';
 
 void main() {
   runApp(const UsinageProApp());
@@ -16,9 +15,28 @@ class UsinageProApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blueGrey,
         useMaterial3: true,
-        scaffoldBackgroundColor: Colors.grey[100],
       ),
-      home: const PhotoScreen(),
+      home: const HomeScreen(),
+    );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Usinage Pro'),
+        centerTitle: true,
+      ),
+      body: const Center(
+        child: Text(
+          'Application en cours de développement',
+          style: TextStyle(fontSize: 20),
+        ),
+      ),
     );
   }
 }
