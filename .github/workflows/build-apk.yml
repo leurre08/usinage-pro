@@ -38,9 +38,10 @@ jobs:
           cd ..
           cd usinage_pro_temp
           flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk ../usinage-pro/app-release.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: usinage-pro-apk
-          path: ../usinage_pro_temp/build/app/outputs/flutter-apk/app-release.apk
+          path: app-release.apk
