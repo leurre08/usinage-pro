@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'material_screen.dart';
 
 class BrandScreen extends StatelessWidget {
   const BrandScreen({super.key});
@@ -18,8 +19,11 @@ class BrandScreen extends StatelessWidget {
             subtitle: const Text('Spécialiste fraisage'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Jongen sélectionné')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MaterialScreen(brandId: 'jongen'),
+                ),
               );
             },
           ),
@@ -29,8 +33,11 @@ class BrandScreen extends StatelessWidget {
             subtitle: const Text('Tous procédés'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Iscar sélectionné')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const MaterialScreen(brandId: 'iscar'),
+                ),
               );
             },
           ),
