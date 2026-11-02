@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class MaterialScreen extends StatelessWidget {
-  const MaterialScreen({super.key});
+  final String brandId;
+  const MaterialScreen({super.key, required this.brandId});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +18,7 @@ class MaterialScreen extends StatelessWidget {
             title: const Text('Acier non allié (P1)'),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('P1 sélectionné')),
+                SnackBar(content: Text('P1 sélectionné pour $brandId')),
               );
             },
           ),
@@ -26,7 +27,7 @@ class MaterialScreen extends StatelessWidget {
             title: const Text('Acier inoxydable (M1)'),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('M1 sélectionné')),
+                SnackBar(content: Text('M1 sélectionné pour $brandId')),
               );
             },
           ),
@@ -35,7 +36,7 @@ class MaterialScreen extends StatelessWidget {
             title: const Text('Aluminium (N1)'),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('N1 sélectionné')),
+                SnackBar(content: Text('N1 sélectionné pour $brandId')),
               );
             },
           ),
