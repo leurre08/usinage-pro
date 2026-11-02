@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/brand_screen.dart';
 
 void main() {
   runApp(const UsinageProApp());
@@ -31,10 +32,28 @@ class HomeScreen extends StatelessWidget {
         title: const Text('Usinage Pro'),
         centerTitle: true,
       ),
-      body: const Center(
-        child: Text(
-          'Application en cours de développement',
-          style: TextStyle(fontSize: 20),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Bienvenue !',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BrandScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+              ),
+              child: const Text('Choisir une marque', style: TextStyle(fontSize: 18)),
+            ),
+          ],
         ),
       ),
     );
