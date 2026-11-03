@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'cutting_screen.dart';
 
 class OperationScreen extends StatelessWidget {
   final String brandId;
@@ -16,9 +17,7 @@ class OperationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F8),
-      appBar: AppBar(
-        title: const Text('4/4 - Opération'),
-      ),
+      appBar: AppBar(title: const Text('4/4 - Opération')),
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
@@ -47,10 +46,7 @@ class OperationScreen extends StatelessWidget {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          leading: CircleAvatar(
-            backgroundColor: color,
-            child: Icon(icon, color: Colors.white),
-          ),
+          leading: CircleAvatar(backgroundColor: color, child: Icon(icon, color: Colors.white)),
           title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           children: operations.map((op) {
             return ListTile(
@@ -59,10 +55,13 @@ class OperationScreen extends StatelessWidget {
               title: Text(op, style: const TextStyle(fontSize: 14)),
               trailing: const Icon(Icons.chevron_right, color: Color(0xFF2C5F8A)),
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('$op sur $materialName'),
-                    backgroundColor: const Color(0xFF2C5F8A),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CuttingScreen(
+                      operationName: op,
+                      materialName: materialName,
+                    ),
                   ),
                 );
               },
