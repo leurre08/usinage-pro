@@ -60,6 +60,7 @@ class OperationScreen extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => CuttingScreen(
                       operationName: op,
+                      materialId: materialId,  // ✅ Ajouté !
                       materialName: materialName,
                     ),
                   ),
