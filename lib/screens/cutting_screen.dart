@@ -23,17 +23,45 @@ class _CuttingScreenState extends State<CuttingScreen> {
   late TextEditingController _aeController;
   late TextEditingController _dController;
   late TextEditingController _zController;
+  late TextEditingController _pitchController;
+  late TextEditingController _etaController;
 
   double _n = 0;
   double _vf = 0;
+  double _q = 0;
+  double _power = 0;
 
-  // Détermine si c'est du fraisage (pour adapter les calculs et libellés)
   bool get isMilling => widget.operationName.contains('Fraisage');
   bool get isDrilling => widget.operationName.contains('Perçage');
   bool get isTurning => widget.operationName.contains('Tournage');
+  bool get isThreading => widget.operationName.contains('Taraudage');
 
-  String get feedLabel => isMilling ? 'fz (Avance par dent)' : 'f (Avance par tour)';
-  String get feedUnit => isMilling ? 'mm/dent' : 'mm/tr';
+  String get feedLabel {
+    if (isThreading) return 'Pas';
+    if (isMilling) return 'fz';
+    return 'f';
+  }
+
+  String get feedUnit {
+    if (isThreading) return 'mm';
+    if (isMilling) return 'mm/dt';
+    return 'mm/tr';
+  }
+
+  IconData get toolIcon {
+    if (isMilling) return Icons.grid_view;
+    if (isDrilling) return Icons.center_focus_strong;
+    if (isThreading) return Icons.text_fields;
+    return Icons.rotate_right;
+  }
+
+  double _getKc() {
+    String group = widget.materialId.substring(0, 1).toLowerCase();
+    Map<String, double> kcValues = {
+      'p': 230, 'm': 270, 'k': 170, 'n': 140, 's': 470, 'h': 330,
+    };
+    return kcValues[group] ?? 230;
+  }
 
   @override
   void initState() {
@@ -42,7 +70,6 @@ class _CuttingScreenState extends State<CuttingScreen> {
   }
 
   void _loadDefaultValues() {
-    // On extrait la première lettre du materialId (p, m, k, n, s, h)
     String group = widget.materialId.substring(0, 1).toLowerCase();
     Map<String, dynamic> defaults = _getDefaults(widget.operationName, group);
 
@@ -52,51 +79,87 @@ class _CuttingScreenState extends State<CuttingScreen> {
     _aeController = TextEditingController(text: defaults['ae'].toString());
     _dController = TextEditingController(text: defaults['d'].toString());
     _zController = TextEditingController(text: defaults['z'].toString());
+    _pitchController = TextEditingController(text: defaults['pitch'].toString());
+    _etaController = TextEditingController(text: '0.85');
 
     _calculate();
   }
 
   Map<String, dynamic> _getDefaults(String operation, String group) {
-    // Valeurs moyennes issues de ton fichier Excel (AideAuxCalculs)
     if (operation.contains('Tournage')) {
-      if (group == 'p') return {'vc': 275, 'feed': 0.30, 'ap': 2.0, 'ae': 0.0, 'd': 40, 'z': 1};
-      if (group == 'm') return {'vc': 150, 'feed': 0.20, 'ap': 1.5, 'ae': 0.0, 'd': 40, 'z': 1};
-      if (group == 'k') return {'vc': 180, 'feed': 0.35, 'ap': 2.0, 'ae': 0.0, 'd': 40, 'z': 1};
-      if (group == 'n') return {'vc': 400, 'feed': 0.40, 'ap': 3.0, 'ae': 0.0, 'd': 40, 'z': 1};
-      if (group == 's') return {'vc': 60, 'feed': 0.15, 'ap': 1.0, 'ae': 0.0, 'd': 40, 'z': 1};
-      if (group == 'h') return {'vc': 80, 'feed': 0.10, 'ap': 0.5, 'ae': 0.0, 'd': 40, 'z': 1};
+      if (group == 'p') return {'vc': 275, 'feed': 0.30, 'ap': 2.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
+      if (group == 'm') return {'vc': 150, 'feed': 0.20, 'ap': 1.5, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
+      if (group == 'k') return {'vc': 180, 'feed': 0.35, 'ap': 2.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
+      if (group == 'n') return {'vc': 400, 'feed': 0.40, 'ap': 3.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
+      if (group == 's') return {'vc': 60, 'feed': 0.15, 'ap': 1.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
+      if (group == 'h') return {'vc': 80, 'feed': 0.10, 'ap': 0.5, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
     } else if (operation.contains('Fraisage')) {
-      if (group == 'p') return {'vc': 180, 'feed': 0.10, 'ap': 2.0, 'ae': 20.0, 'd': 40, 'z': 4};
-      if (group == 'm') return {'vc': 120, 'feed': 0.08, 'ap': 1.5, 'ae': 15.0, 'd': 40, 'z': 4};
-      if (group == 'k') return {'vc': 150, 'feed': 0.12, 'ap': 2.0, 'ae': 20.0, 'd': 40, 'z': 4};
-      if (group == 'n') return {'vc': 350, 'feed': 0.15, 'ap': 3.0, 'ae': 30.0, 'd': 40, 'z': 4};
-      if (group == 's') return {'vc': 50, 'feed': 0.06, 'ap': 1.0, 'ae': 10.0, 'd': 40, 'z': 4};
-      if (group == 'h') return {'vc': 70, 'feed': 0.05, 'ap': 0.5, 'ae': 5.0, 'd': 40, 'z': 4};
+      if (group == 'p') return {'vc': 180, 'feed': 0.10, 'ap': 2.0, 'ae': 20.0, 'd': 40, 'z': 4, 'pitch': 0.0};
+      if (group == 'm') return {'vc': 120, 'feed': 0.08, 'ap': 1.5, 'ae': 15.0, 'd': 40, 'z': 4, 'pitch': 0.0};
+      if (group == 'k') return {'vc': 150, 'feed': 0.12, 'ap': 2.0, 'ae': 20.0, 'd': 40, 'z': 4, 'pitch': 0.0};
+      if (group == 'n') return {'vc': 350, 'feed': 0.15, 'ap': 3.0, 'ae': 30.0, 'd': 40, 'z': 4, 'pitch': 0.0};
+      if (group == 's') return {'vc': 50, 'feed': 0.06, 'ap': 1.0, 'ae': 10.0, 'd': 40, 'z': 4, 'pitch': 0.0};
+      if (group == 'h') return {'vc': 70, 'feed': 0.05, 'ap': 0.5, 'ae': 5.0, 'd': 40, 'z': 4, 'pitch': 0.0};
     } else if (operation.contains('Perçage')) {
-      if (group == 'p') return {'vc': 30, 'feed': 0.20, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1};
-      if (group == 'm') return {'vc': 20, 'feed': 0.15, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1};
-      if (group == 'k') return {'vc': 40, 'feed': 0.25, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1};
-      if (group == 'n') return {'vc': 80, 'feed': 0.30, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1};
-      if (group == 's') return {'vc': 15, 'feed': 0.10, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1};
-      if (group == 'h') return {'vc': 20, 'feed': 0.08, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1};
+      if (group == 'p') return {'vc': 30, 'feed': 0.10, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0};
+      if (group == 'm') return {'vc': 20, 'feed': 0.08, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0};
+      if (group == 'k') return {'vc': 40, 'feed': 0.12, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0};
+      if (group == 'n') return {'vc': 80, 'feed': 0.15, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0};
+      if (group == 's') return {'vc': 15, 'feed': 0.05, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0};
+      if (group == 'h') return {'vc': 20, 'feed': 0.04, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0};
+    } else if (operation.contains('Taraudage')) {
+      if (group == 'p') return {'vc': 30, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5};
+      if (group == 'm') return {'vc': 20, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5};
+      if (group == 'k') return {'vc': 25, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5};
+      if (group == 'n') return {'vc': 40, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5};
+      if (group == 's') return {'vc': 15, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5};
+      if (group == 'h') return {'vc': 18, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5};
     }
-    
-    // Valeurs par défaut de secours
-    return {'vc': 100, 'feed': 0.1, 'ap': 1.0, 'ae': 10.0, 'd': 40, 'z': isMilling ? 4 : 1};
+    return {'vc': 100, 'feed': 0.1, 'ap': 1.0, 'ae': 10.0, 'd': 40, 'z': 1, 'pitch': 1.5};
   }
 
   void _calculate() {
     final vc = double.tryParse(_vcController.text) ?? 0;
     final feed = double.tryParse(_feedController.text) ?? 0;
+    final ap = double.tryParse(_apController.text) ?? 0;
+    final ae = double.tryParse(_aeController.text) ?? 0;
     final d = double.tryParse(_dController.text) ?? 0;
     final z = double.tryParse(_zController.text) ?? 1;
+    final pitch = double.tryParse(_pitchController.text) ?? 0;
+    final eta = double.tryParse(_etaController.text) ?? 0.85;
+    final kc = _getKc();
 
     if (d > 0) {
       setState(() {
-        // Formule : N = (Vc * 1000) / (π * D)
         _n = (vc * 1000) / (3.14159 * d);
-        // Formule : Vf = N * feed * z (z=1 pour tournage/perçage)
-        _vf = _n * feed * z;
+
+        if (isThreading) {
+          _vf = _n * pitch;
+        } else if (isMilling || isDrilling) {
+          _vf = _n * feed * z;
+        } else {
+          _vf = _n * feed;
+        }
+
+        // Débit copeaux et Puissance selon opération
+        if (isMilling && ap > 0 && ae > 0) {
+          _q = (ap * ae * _vf) / 1000;
+          _power = (kc * _q) / (60000 * eta);
+        } else if (isTurning && ap > 0) {
+          // Tournage : Q = ap × f × Vc × 1000 / 1000 (en cm³/min)
+          // Plus simple : P = (Kc × ap × f × Vc) / (60 × η) avec Kc en daN/mm²
+          _q = ap * feed * vc; // cm³/min (approximatif)
+          _power = (kc * ap * feed * vc) / (60000 * eta);
+        } else if (isDrilling) {
+          // Perçage : P = (Kc × π × D × f × n) / (60000 × η)
+          // Ou : Fc = Kc × (D/2) × f, P = Fc × Vc / 60000
+          final fc = kc * (d / 2) * feed; // Force de coupe en daN
+          _power = (fc * vc) / (6000 * eta); // kW (conversion daN·m/min → kW)
+          _q = (3.14159 * d * d / 4) * _vf / 1000;
+        } else {
+          _q = 0;
+          _power = 0;
+        }
       });
     }
   }
@@ -106,89 +169,165 @@ class _CuttingScreenState extends State<CuttingScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F8),
       appBar: AppBar(title: const Text('Conditions de coupe')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: Stack(
         children: [
-          // En-tête
-          Card(
-            elevation: 3,
-            color: const Color(0xFF2C5F8A),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Text(widget.operationName, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Text(widget.materialName, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                ],
+          // Fond avec icône outil en filigrane
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.04,
+              child: Center(
+                child: Icon(toolIcon, size: 400, color: const Color(0xFF2C5F8A)),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          // Contenu principal
+          ListView(
+            padding: const EdgeInsets.all(12),
+            children: [
+              // En-tête compact
+              Card(
+                elevation: 3,
+                color: const Color(0xFF2C5F8A),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        child: Icon(toolIcon, color: Colors.white, size: 32),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(widget.operationName, 
+                              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 4),
+                            Text(widget.materialName, 
+                              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
 
-          // Paramètres de coupe
-          _buildInputCard('Vc', 'Vitesse de coupe', _vcController, 'm/min', Icons.speed),
-          _buildInputCard('f', feedLabel, _feedController, feedUnit, Icons.move_up),
-          if (!isDrilling) _buildInputCard('ap', 'Profondeur de passe', _apController, 'mm', Icons.height),
-          if (isMilling) _buildInputCard('ae', 'Largeur de coupe', _aeController, 'mm', Icons.straighten),
+              // Paramètres de coupe
+              _buildSectionTitle('COUPE'),
+              _buildInputRow('Vc', _vcController, 'm/min', Icons.speed),
+              _buildInputRow(feedLabel, _feedController, feedUnit, Icons.move_up),
+              if (!isDrilling && !isThreading) 
+                _buildInputRow('ap', _apController, 'mm', Icons.height),
+              if (isMilling) 
+                _buildInputRow('ae', _aeController, 'mm', Icons.straighten),
 
-          const SizedBox(height: 16),
-          const Text('OUTIL', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2C5F8A), letterSpacing: 1)),
-          const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-          _buildInputCard('D', 'Diamètre outil', _dController, 'mm', Icons.circle),
-          if (isMilling) _buildInputCard('z', 'Nombre de dents', _zController, 'dents', Icons.grid_view),
+              // Outil
+              _buildSectionTitle('OUTIL'),
+              _buildInputRow('D', _dController, 'mm', Icons.circle),
+              if (isMilling || isDrilling) 
+                _buildInputRow('z', _zController, 'arêtes', Icons.grid_view),
+              if (isThreading)
+                _buildInputRow('Pas', _pitchController, 'mm', Icons.text_fields),
+              _buildInputRow('η', _etaController, '', Icons.battery_charging_full),
 
-          const SizedBox(height: 16),
-          const Text('RÉSULTATS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2C5F8A), letterSpacing: 1)),
-          const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-          _buildResultCard('N', 'Vitesse de rotation', _n.toStringAsFixed(0), 'tr/min', Icons.rotate_right),
-          _buildResultCard('Vf', 'Avance minute', _vf.toStringAsFixed(0), 'mm/min', Icons.trending_up),
+              // Résultats
+              _buildSectionTitle('RÉSULTATS'),
+              _buildResultRow('N', _n.toStringAsFixed(0), 'tr/min', Icons.rotate_right, Colors.blue),
+              _buildResultRow('Vf', _vf.toStringAsFixed(0), 'mm/min', Icons.trending_up, Colors.blue),
+              if (_q > 0)
+                _buildResultRow('Q', _q.toStringAsFixed(1), 'cm³/min', Icons.water_drop, Colors.orange),
+              if (_power > 0)
+                _buildResultRow('P', _power.toStringAsFixed(2), 'kW', Icons.flash_on, Colors.red),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInputCard(String code, String label, TextEditingController controller, String unit, IconData icon) {
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Text(title, 
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, 
+          color: Color(0xFF2C5F8A), letterSpacing: 1.5)),
+    );
+  }
+
+  Widget _buildInputRow(String label, TextEditingController controller, String unit, IconData icon) {
     return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: CircleAvatar(backgroundColor: const Color(0xFF5B9BD5), child: Icon(icon, color: Colors.white)),
-        title: Text(label, style: const TextStyle(fontSize: 14)),
-        subtitle: Text(code, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        trailing: SizedBox(
-          width: 120,
-          child: TextField(
-            controller: controller,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            textAlign: TextAlign.right,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2C5F8A)),
-            decoration: InputDecoration(
-              suffixText: unit,
-              suffixStyle: const TextStyle(fontSize: 12, color: Colors.grey),
-              border: InputBorder.none,
+      elevation: 1,
+      margin: const EdgeInsets.symmetric(vertical: 3),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, color: const Color(0xFF5B9BD5), size: 24),
+            const SizedBox(width: 12),
+            Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            const Spacer(),
+            SizedBox(
+              width: 100,
+              child: TextField(
+                controller: controller,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                textAlign: TextAlign.right,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2C5F8A)),
+                decoration: InputDecoration(
+                  suffixText: unit,
+                  suffixStyle: const TextStyle(fontSize: 11, color: Colors.grey),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
+                ),
+                onChanged: (value) => _calculate(),
+              ),
             ),
-            onChanged: (value) => _calculate(),
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildResultCard(String code, String label, String value, String unit, IconData icon) {
+  Widget _buildResultRow(String code, String value, String unit, IconData icon, Color color) {
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: CircleAvatar(backgroundColor: const Color(0xFF70AD47), child: Icon(icon, color: Colors.white)),
-        title: Text(label, style: const TextStyle(fontSize: 14)),
-        subtitle: Text(code, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        trailing: Text('$value $unit', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF70AD47))),
+      margin: const EdgeInsets.symmetric(vertical: 3),
+      color: color.withOpacity(0.08),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: color,
+              child: Icon(icon, color: Colors.white, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(code, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
+                  Text(unit, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                ],
+              ),
+            ),
+            Text(value, 
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+          ],
+        ),
       ),
     );
   }
