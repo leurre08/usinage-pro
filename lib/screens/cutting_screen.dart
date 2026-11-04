@@ -36,16 +36,24 @@ class _CuttingScreenState extends State<CuttingScreen> {
   bool get isTurning => widget.operationName.contains('Tournage');
   bool get isThreading => widget.operationName.contains('Taraudage');
 
+  // ✅ CORRECTION : libellés adaptés selon l'opération
   String get feedLabel {
-    if (isThreading) return 'Pas';
-    if (isMilling) return 'fz';
-    return 'f';
+    if (isThreading) return 'Pas du filetage';
+    if (isMilling) return 'fz (Avance par dent)';
+    if (isDrilling) return 'fz (Avance par arête)';
+    return 'f (Avance par tour)';
   }
 
   String get feedUnit {
     if (isThreading) return 'mm';
-    if (isMilling) return 'mm/dt';
+    if (isMilling || isDrilling) return 'mm/dt';
     return 'mm/tr';
+  }
+
+  String get feedCode {
+    if (isThreading) return 'Pas';
+    if (isMilling || isDrilling) return 'fz';
+    return 'f';
   }
 
   IconData get toolIcon {
@@ -94,12 +102,13 @@ class _CuttingScreenState extends State<CuttingScreen> {
       if (group == 's') return {'vc': 60, 'feed': 0.15, 'ap': 1.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
       if (group == 'h') return {'vc': 80, 'feed': 0.10, 'ap': 0.5, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
     } else if (operation.contains('Fraisage')) {
-      if (group == 'p') return {'vc': 180, 'feed': 0.10, 'ap': 2.0, 'ae': 20.0, 'd': 40, 'z': 4, 'pitch': 0.0};
-      if (group == 'm') return {'vc': 120, 'feed': 0.08, 'ap': 1.5, 'ae': 15.0, 'd': 40, 'z': 4, 'pitch': 0.0};
-      if (group == 'k') return {'vc': 150, 'feed': 0.12, 'ap': 2.0, 'ae': 20.0, 'd': 40, 'z': 4, 'pitch': 0.0};
-      if (group == 'n') return {'vc': 350, 'feed': 0.15, 'ap': 3.0, 'ae': 30.0, 'd': 40, 'z': 4, 'pitch': 0.0};
-      if (group == 's') return {'vc': 50, 'feed': 0.06, 'ap': 1.0, 'ae': 10.0, 'd': 40, 'z': 4, 'pitch': 0.0};
-      if (group == 'h') return {'vc': 70, 'feed': 0.05, 'ap': 0.5, 'ae': 5.0, 'd': 40, 'z': 4, 'pitch': 0.0};
+      // ✅ Valeurs fz par dent (et non par tour)
+      if (group == 'p') return {'vc': 180, 'feed': 0.10, 'ap': 2.0, 'ae': 20.0, 'd': 63, 'z': 6, 'pitch': 0.0};
+      if (group == 'm') return {'vc': 120, 'feed': 0.08, 'ap': 1.5, 'ae': 15.0, 'd': 63, 'z': 6, 'pitch': 0.0};
+      if (group == 'k') return {'vc': 150, 'feed': 0.12, 'ap': 2.0, 'ae': 20.0, 'd': 63, 'z': 6, 'pitch': 0.0};
+      if (group == 'n') return {'vc': 350, 'feed': 0.15, 'ap': 3.0, 'ae': 30.0, 'd': 63, 'z': 6, 'pitch': 0.0};
+      if (group == 's') return {'vc': 50, 'feed': 0.06, 'ap': 1.0, 'ae': 10.0, 'd': 63, 'z': 6, 'pitch': 0.0};
+      if (group == 'h') return {'vc': 70, 'feed': 0.05, 'ap': 0.5, 'ae': 5.0, 'd': 63, 'z': 6, 'pitch': 0.0};
     } else if (operation.contains('Perçage')) {
       if (group == 'p') return {'vc': 30, 'feed': 0.10, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0};
       if (group == 'm') return {'vc': 20, 'feed': 0.08, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0};
@@ -133,28 +142,27 @@ class _CuttingScreenState extends State<CuttingScreen> {
       setState(() {
         _n = (vc * 1000) / (3.14159 * d);
 
+        // ✅ Formules correctes selon opération
         if (isThreading) {
           _vf = _n * pitch;
         } else if (isMilling || isDrilling) {
+          // Fraisage ET Perçage : Vf = N × fz × z
           _vf = _n * feed * z;
         } else {
+          // Tournage : Vf = N × f
           _vf = _n * feed;
         }
 
-        // Débit copeaux et Puissance selon opération
+        // Débit copeaux et Puissance
         if (isMilling && ap > 0 && ae > 0) {
           _q = (ap * ae * _vf) / 1000;
           _power = (kc * _q) / (60000 * eta);
         } else if (isTurning && ap > 0) {
-          // Tournage : Q = ap × f × Vc × 1000 / 1000 (en cm³/min)
-          // Plus simple : P = (Kc × ap × f × Vc) / (60 × η) avec Kc en daN/mm²
-          _q = ap * feed * vc; // cm³/min (approximatif)
+          _q = ap * feed * vc;
           _power = (kc * ap * feed * vc) / (60000 * eta);
         } else if (isDrilling) {
-          // Perçage : P = (Kc × π × D × f × n) / (60000 × η)
-          // Ou : Fc = Kc × (D/2) × f, P = Fc × Vc / 60000
-          final fc = kc * (d / 2) * feed; // Force de coupe en daN
-          _power = (fc * vc) / (6000 * eta); // kW (conversion daN·m/min → kW)
+          final fc = kc * (d / 2) * feed;
+          _power = (fc * vc) / (6000 * eta);
           _q = (3.14159 * d * d / 4) * _vf / 1000;
         } else {
           _q = 0;
@@ -171,7 +179,6 @@ class _CuttingScreenState extends State<CuttingScreen> {
       appBar: AppBar(title: const Text('Conditions de coupe')),
       body: Stack(
         children: [
-          // Fond avec icône outil en filigrane
           Positioned.fill(
             child: Opacity(
               opacity: 0.04,
@@ -180,11 +187,9 @@ class _CuttingScreenState extends State<CuttingScreen> {
               ),
             ),
           ),
-          // Contenu principal
           ListView(
             padding: const EdgeInsets.all(12),
             children: [
-              // En-tête compact
               Card(
                 elevation: 3,
                 color: const Color(0xFF2C5F8A),
@@ -217,10 +222,9 @@ class _CuttingScreenState extends State<CuttingScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Paramètres de coupe
               _buildSectionTitle('COUPE'),
               _buildInputRow('Vc', _vcController, 'm/min', Icons.speed),
-              _buildInputRow(feedLabel, _feedController, feedUnit, Icons.move_up),
+              _buildInputRow(feedCode, _feedController, feedUnit, Icons.move_up),
               if (!isDrilling && !isThreading) 
                 _buildInputRow('ap', _apController, 'mm', Icons.height),
               if (isMilling) 
@@ -228,18 +232,21 @@ class _CuttingScreenState extends State<CuttingScreen> {
 
               const SizedBox(height: 12),
 
-              // Outil
               _buildSectionTitle('OUTIL'),
               _buildInputRow('D', _dController, 'mm', Icons.circle),
-              if (isMilling || isDrilling) 
-                _buildInputRow('z', _zController, 'arêtes', Icons.grid_view),
+              
+              // ✅ CORRECTION : z affiché pour Fraisage ET Perçage
+              if (isMilling) 
+                _buildInputRow('z', 'Nombre de dents', _zController, 'dents', Icons.grid_view),
+              if (isDrilling) 
+                _buildInputRow('z', "Nombre d'arêtes", _zController, 'arêtes', Icons.grid_view),
+              
               if (isThreading)
                 _buildInputRow('Pas', _pitchController, 'mm', Icons.text_fields),
               _buildInputRow('η', _etaController, '', Icons.battery_charging_full),
 
               const SizedBox(height: 12),
 
-              // Résultats
               _buildSectionTitle('RÉSULTATS'),
               _buildResultRow('N', _n.toStringAsFixed(0), 'tr/min', Icons.rotate_right, Colors.blue),
               _buildResultRow('Vf', _vf.toStringAsFixed(0), 'mm/min', Icons.trending_up, Colors.blue),
@@ -274,10 +281,11 @@ class _CuttingScreenState extends State<CuttingScreen> {
           children: [
             Icon(icon, color: const Color(0xFF5B9BD5), size: 24),
             const SizedBox(width: 12),
-            Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-            const Spacer(),
+            Expanded(
+              child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            ),
             SizedBox(
-              width: 100,
+              width: 110,
               child: TextField(
                 controller: controller,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
