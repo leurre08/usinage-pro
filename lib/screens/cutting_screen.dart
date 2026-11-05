@@ -202,10 +202,10 @@ class _CuttingScreenState extends State<CuttingScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(widget.operationName, 
+                            Text(widget.operationName,
                               style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                             const SizedBox(height: 4),
-                            Text(widget.materialName, 
+                            Text(widget.materialName,
                               style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
                           ],
                         ),
@@ -217,24 +217,24 @@ class _CuttingScreenState extends State<CuttingScreen> {
               const SizedBox(height: 12),
 
               _buildSectionTitle('COUPE'),
-              _buildInputRow('Vc', _vcController, 'm/min', Icons.speed),
-              _buildInputRow(feedCode, _feedController, feedUnit, Icons.arrow_forward),
-              if (!isDrilling && !isThreading) 
-                _buildInputRow('ap', _apController, 'mm', Icons.height),
-              if (isMilling) 
-                _buildInputRow('ae', _aeController, 'mm', Icons.straighten),
+              _buildInputRow('Vc', _vcController, 'm/min', Icons.speed, subtitle: 'Vitesse de coupe'),
+              _buildInputRow(feedCode, _feedController, feedUnit, Icons.arrow_forward, subtitle: feedLabel),
+              if (!isDrilling && !isThreading)
+                _buildInputRow('ap', _apController, 'mm', Icons.height, subtitle: 'Profondeur de passe'),
+              if (isMilling)
+                _buildInputRow('ae', _aeController, 'mm', Icons.straighten, subtitle: 'Engagement radial'),
 
               const SizedBox(height: 12),
 
               _buildSectionTitle('OUTIL'),
-              _buildInputRow('D', _dController, 'mm', Icons.circle),
-              if (isMilling) 
-                _buildInputRow('z', 'Nombre de dents', _zController, 'dents', Icons.grid_view),
-              if (isDrilling) 
-                _buildInputRow('z', "Nombre d'arêtes", _zController, 'arêtes', Icons.grid_view),
+              _buildInputRow('D', _dController, 'mm', Icons.circle, subtitle: 'Diamètre'),
+              if (isMilling)
+                _buildInputRow('z', _zController, 'dents', Icons.grid_view, subtitle: 'Nombre de dents'),
+              if (isDrilling)
+                _buildInputRow('z', _zController, 'arêtes', Icons.grid_view, subtitle: "Nombre d'arêtes"),
               if (isThreading)
-                _buildInputRow('Pas', _pitchController, 'mm', Icons.text_fields),
-              _buildInputRow('η', _etaController, '', Icons.battery_full),
+                _buildInputRow('Pas', _pitchController, 'mm', Icons.text_fields, subtitle: 'Pas du filetage'),
+              _buildInputRow('η', _etaController, '', Icons.battery_full, subtitle: 'Rendement machine'),
 
               const SizedBox(height: 12),
 
@@ -255,50 +255,14 @@ class _CuttingScreenState extends State<CuttingScreen> {
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Text(title, 
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, 
+      child: Text(title,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold,
           color: Color(0xFF2C5F8A), letterSpacing: 1.5)),
     );
   }
 
-  Widget _buildInputRow(String label, TextEditingController controller, String unit, IconData icon) {
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.symmetric(vertical: 3),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          children: [
-            Icon(icon, color: const Color(0xFF5B9BD5), size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-            ),
-            SizedBox(
-              width: 110,
-              child: TextField(
-                controller: controller,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                textAlign: TextAlign.right,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2C5F8A)),
-                decoration: InputDecoration(
-                  suffixText: unit,
-                  suffixStyle: const TextStyle(fontSize: 11, color: Colors.grey),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
-                  isDense: true,
-                ),
-                onChanged: (value) => _calculate(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInputRow(String label, String subtitle, TextEditingController controller, String unit, IconData icon) {
+  // ✅ UNE SEULE MÉTHODE avec paramètre optionnel
+  Widget _buildInputRow(String code, TextEditingController controller, String unit, IconData icon, {String? subtitle}) {
     return Card(
       elevation: 1,
       margin: const EdgeInsets.symmetric(vertical: 3),
@@ -313,8 +277,9 @@ class _CuttingScreenState extends State<CuttingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                  Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  Text(code, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  if (subtitle != null)
+                    Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
                 ],
               ),
             ),
@@ -366,7 +331,7 @@ class _CuttingScreenState extends State<CuttingScreen> {
                 ],
               ),
             ),
-            Text(value, 
+            Text(value,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
           ],
         ),
