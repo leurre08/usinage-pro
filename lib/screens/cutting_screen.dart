@@ -36,7 +36,6 @@ class _CuttingScreenState extends State<CuttingScreen> {
   bool get isTurning => widget.operationName.contains('Tournage');
   bool get isThreading => widget.operationName.contains('Taraudage');
 
-  // ✅ CORRECTION : libellés adaptés selon l'opération
   String get feedLabel {
     if (isThreading) return 'Pas du filetage';
     if (isMilling) return 'fz (Avance par dent)';
@@ -102,7 +101,6 @@ class _CuttingScreenState extends State<CuttingScreen> {
       if (group == 's') return {'vc': 60, 'feed': 0.15, 'ap': 1.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
       if (group == 'h') return {'vc': 80, 'feed': 0.10, 'ap': 0.5, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
     } else if (operation.contains('Fraisage')) {
-      // ✅ Valeurs fz par dent (et non par tour)
       if (group == 'p') return {'vc': 180, 'feed': 0.10, 'ap': 2.0, 'ae': 20.0, 'd': 63, 'z': 6, 'pitch': 0.0};
       if (group == 'm') return {'vc': 120, 'feed': 0.08, 'ap': 1.5, 'ae': 15.0, 'd': 63, 'z': 6, 'pitch': 0.0};
       if (group == 'k') return {'vc': 150, 'feed': 0.12, 'ap': 2.0, 'ae': 20.0, 'd': 63, 'z': 6, 'pitch': 0.0};
@@ -142,18 +140,14 @@ class _CuttingScreenState extends State<CuttingScreen> {
       setState(() {
         _n = (vc * 1000) / (3.14159 * d);
 
-        // ✅ Formules correctes selon opération
         if (isThreading) {
           _vf = _n * pitch;
         } else if (isMilling || isDrilling) {
-          // Fraisage ET Perçage : Vf = N × fz × z
           _vf = _n * feed * z;
         } else {
-          // Tournage : Vf = N × f
           _vf = _n * feed;
         }
 
-        // Débit copeaux et Puissance
         if (isMilling && ap > 0 && ae > 0) {
           _q = (ap * ae * _vf) / 1000;
           _power = (kc * _q) / (60000 * eta);
@@ -224,7 +218,7 @@ class _CuttingScreenState extends State<CuttingScreen> {
 
               _buildSectionTitle('COUPE'),
               _buildInputRow('Vc', _vcController, 'm/min', Icons.speed),
-              _buildInputRow(feedCode, _feedController, feedUnit, Icons.move_up),
+              _buildInputRow(feedCode, _feedController, feedUnit, Icons.arrow_forward),
               if (!isDrilling && !isThreading) 
                 _buildInputRow('ap', _apController, 'mm', Icons.height),
               if (isMilling) 
@@ -234,16 +228,13 @@ class _CuttingScreenState extends State<CuttingScreen> {
 
               _buildSectionTitle('OUTIL'),
               _buildInputRow('D', _dController, 'mm', Icons.circle),
-              
-              // ✅ CORRECTION : z affiché pour Fraisage ET Perçage
               if (isMilling) 
                 _buildInputRow('z', 'Nombre de dents', _zController, 'dents', Icons.grid_view),
               if (isDrilling) 
                 _buildInputRow('z', "Nombre d'arêtes", _zController, 'arêtes', Icons.grid_view),
-              
               if (isThreading)
                 _buildInputRow('Pas', _pitchController, 'mm', Icons.text_fields),
-              _buildInputRow('η', _etaController, '', Icons.battery_charging_full),
+              _buildInputRow('η', _etaController, '', Icons.battery_full),
 
               const SizedBox(height: 12),
 
@@ -283,6 +274,49 @@ class _CuttingScreenState extends State<CuttingScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            ),
+            SizedBox(
+              width: 110,
+              child: TextField(
+                controller: controller,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                textAlign: TextAlign.right,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2C5F8A)),
+                decoration: InputDecoration(
+                  suffixText: unit,
+                  suffixStyle: const TextStyle(fontSize: 11, color: Colors.grey),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
+                ),
+                onChanged: (value) => _calculate(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputRow(String label, String subtitle, TextEditingController controller, String unit, IconData icon) {
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.symmetric(vertical: 3),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, color: const Color(0xFF5B9BD5), size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                  Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                ],
+              ),
             ),
             SizedBox(
               width: 110,
