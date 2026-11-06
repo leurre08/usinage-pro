@@ -25,16 +25,34 @@ class _CuttingScreenState extends State<CuttingScreen> {
   late TextEditingController _zController;
   late TextEditingController _pitchController;
   late TextEditingController _etaController;
+  late TextEditingController _lengthController;
 
   double _n = 0;
   double _vf = 0;
   double _q = 0;
   double _power = 0;
+  double _time = 0;
 
-  bool get isMilling => widget.operationName.contains('Fraisage');
-  bool get isDrilling => widget.operationName.contains('Perçage');
-  bool get isTurning => widget.operationName.contains('Tournage');
-  bool get isThreading => widget.operationName.contains('Taraudage');
+  // ✅ Détection précise du type d'opération
+  bool get isMilling {
+    final op = widget.operationName;
+    return op == 'Surfaçage' || op == 'Rainurage' || op == 'Poche' || 
+           op == 'Copiage' || op == 'Fraisage de filets';
+  }
+  
+  bool get isMillingWithApAe {
+    final op = widget.operationName;
+    return op == 'Surfaçage' || op == 'Rainurage' || op == 'Poche' || op == 'Copiage';
+  }
+  
+  bool get isThreadMilling => widget.operationName == 'Fraisage de filets';
+  bool get isDrilling => widget.operationName == 'Perçage';
+  bool get isTurning {
+    final op = widget.operationName;
+    return op == 'Chariotage' || op == 'Dressage' || op == 'Saignée' || 
+           op == 'Gorge' || op == 'Filetage' || op == 'Profil';
+  }
+  bool get isThreading => widget.operationName == 'Taraudage';
 
   String get feedLabel {
     if (isThreading) return 'Pas du filetage';
@@ -53,6 +71,13 @@ class _CuttingScreenState extends State<CuttingScreen> {
     if (isThreading) return 'Pas';
     if (isMilling || isDrilling) return 'fz';
     return 'f';
+  }
+
+  String get dLabel {
+    if (isTurning) return 'Diamètre usiné';
+    if (isThreading) return 'Diamètre nominal';
+    if (isDrilling) return 'Diamètre foret';
+    return 'Diamètre outil';
   }
 
   IconData get toolIcon {
@@ -88,41 +113,70 @@ class _CuttingScreenState extends State<CuttingScreen> {
     _zController = TextEditingController(text: defaults['z'].toString());
     _pitchController = TextEditingController(text: defaults['pitch'].toString());
     _etaController = TextEditingController(text: '0.85');
+    _lengthController = TextEditingController(text: defaults['length'].toString());
 
     _calculate();
   }
 
   Map<String, dynamic> _getDefaults(String operation, String group) {
-    if (operation.contains('Tournage')) {
-      if (group == 'p') return {'vc': 275, 'feed': 0.30, 'ap': 2.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
-      if (group == 'm') return {'vc': 150, 'feed': 0.20, 'ap': 1.5, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
-      if (group == 'k') return {'vc': 180, 'feed': 0.35, 'ap': 2.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
-      if (group == 'n') return {'vc': 400, 'feed': 0.40, 'ap': 3.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
-      if (group == 's') return {'vc': 60, 'feed': 0.15, 'ap': 1.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
-      if (group == 'h') return {'vc': 80, 'feed': 0.10, 'ap': 0.5, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0};
-    } else if (operation.contains('Fraisage')) {
-      if (group == 'p') return {'vc': 180, 'feed': 0.10, 'ap': 2.0, 'ae': 20.0, 'd': 63, 'z': 6, 'pitch': 0.0};
-      if (group == 'm') return {'vc': 120, 'feed': 0.08, 'ap': 1.5, 'ae': 15.0, 'd': 63, 'z': 6, 'pitch': 0.0};
-      if (group == 'k') return {'vc': 150, 'feed': 0.12, 'ap': 2.0, 'ae': 20.0, 'd': 63, 'z': 6, 'pitch': 0.0};
-      if (group == 'n') return {'vc': 350, 'feed': 0.15, 'ap': 3.0, 'ae': 30.0, 'd': 63, 'z': 6, 'pitch': 0.0};
-      if (group == 's') return {'vc': 50, 'feed': 0.06, 'ap': 1.0, 'ae': 10.0, 'd': 63, 'z': 6, 'pitch': 0.0};
-      if (group == 'h') return {'vc': 70, 'feed': 0.05, 'ap': 0.5, 'ae': 5.0, 'd': 63, 'z': 6, 'pitch': 0.0};
-    } else if (operation.contains('Perçage')) {
-      if (group == 'p') return {'vc': 30, 'feed': 0.10, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0};
-      if (group == 'm') return {'vc': 20, 'feed': 0.08, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0};
-      if (group == 'k') return {'vc': 40, 'feed': 0.12, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0};
-      if (group == 'n') return {'vc': 80, 'feed': 0.15, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0};
-      if (group == 's') return {'vc': 15, 'feed': 0.05, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0};
-      if (group == 'h') return {'vc': 20, 'feed': 0.04, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0};
-    } else if (operation.contains('Taraudage')) {
-      if (group == 'p') return {'vc': 30, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5};
-      if (group == 'm') return {'vc': 20, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5};
-      if (group == 'k') return {'vc': 25, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5};
-      if (group == 'n') return {'vc': 40, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5};
-      if (group == 's') return {'vc': 15, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5};
-      if (group == 'h') return {'vc': 18, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5};
+    if (operation == 'Chariotage' || operation == 'Dressage' || operation == 'Profil') {
+      if (group == 'p') return {'vc': 275, 'feed': 0.30, 'ap': 2.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0, 'length': 50};
+      if (group == 'm') return {'vc': 150, 'feed': 0.20, 'ap': 1.5, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0, 'length': 50};
+      if (group == 'k') return {'vc': 180, 'feed': 0.35, 'ap': 2.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0, 'length': 50};
+      if (group == 'n') return {'vc': 400, 'feed': 0.40, 'ap': 3.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0, 'length': 50};
+      if (group == 's') return {'vc': 60, 'feed': 0.15, 'ap': 1.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0, 'length': 50};
+      if (group == 'h') return {'vc': 80, 'feed': 0.10, 'ap': 0.5, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0, 'length': 50};
+    } else if (operation == 'Saignée' || operation == 'Gorge') {
+      if (group == 'p') return {'vc': 120, 'feed': 0.10, 'ap': 5.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0, 'length': 5};
+      if (group == 'm') return {'vc': 80, 'feed': 0.08, 'ap': 4.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0, 'length': 5};
+      if (group == 'k') return {'vc': 100, 'feed': 0.12, 'ap': 5.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0, 'length': 5};
+      if (group == 'n') return {'vc': 200, 'feed': 0.15, 'ap': 6.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0, 'length': 5};
+      if (group == 's') return {'vc': 40, 'feed': 0.05, 'ap': 3.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0, 'length': 5};
+      if (group == 'h') return {'vc': 50, 'feed': 0.04, 'ap': 2.0, 'ae': 0.0, 'd': 40, 'z': 1, 'pitch': 0.0, 'length': 5};
+    } else if (operation == 'Filetage') {
+      if (group == 'p') return {'vc': 80, 'feed': 1.5, 'ap': 1.0, 'ae': 0.0, 'd': 20, 'z': 1, 'pitch': 1.5, 'length': 20};
+      if (group == 'm') return {'vc': 50, 'feed': 1.5, 'ap': 1.0, 'ae': 0.0, 'd': 20, 'z': 1, 'pitch': 1.5, 'length': 20};
+      if (group == 'k') return {'vc': 60, 'feed': 1.5, 'ap': 1.0, 'ae': 0.0, 'd': 20, 'z': 1, 'pitch': 1.5, 'length': 20};
+      if (group == 'n') return {'vc': 100, 'feed': 1.5, 'ap': 1.0, 'ae': 0.0, 'd': 20, 'z': 1, 'pitch': 1.5, 'length': 20};
+      if (group == 's') return {'vc': 30, 'feed': 1.5, 'ap': 1.0, 'ae': 0.0, 'd': 20, 'z': 1, 'pitch': 1.5, 'length': 20};
+      if (group == 'h') return {'vc': 40, 'feed': 1.5, 'ap': 1.0, 'ae': 0.0, 'd': 20, 'z': 1, 'pitch': 1.5, 'length': 20};
+    } else if (operation == 'Surfaçage') {
+      if (group == 'p') return {'vc': 180, 'feed': 0.10, 'ap': 2.0, 'ae': 40.0, 'd': 63, 'z': 6, 'pitch': 0.0, 'length': 0};
+      if (group == 'm') return {'vc': 120, 'feed': 0.08, 'ap': 1.5, 'ae': 30.0, 'd': 63, 'z': 6, 'pitch': 0.0, 'length': 0};
+      if (group == 'k') return {'vc': 150, 'feed': 0.12, 'ap': 2.0, 'ae': 40.0, 'd': 63, 'z': 6, 'pitch': 0.0, 'length': 0};
+      if (group == 'n') return {'vc': 350, 'feed': 0.15, 'ap': 3.0, 'ae': 50.0, 'd': 63, 'z': 6, 'pitch': 0.0, 'length': 0};
+      if (group == 's') return {'vc': 50, 'feed': 0.06, 'ap': 1.0, 'ae': 20.0, 'd': 63, 'z': 6, 'pitch': 0.0, 'length': 0};
+      if (group == 'h') return {'vc': 70, 'feed': 0.05, 'ap': 0.5, 'ae': 15.0, 'd': 63, 'z': 6, 'pitch': 0.0, 'length': 0};
+    } else if (operation == 'Rainurage' || operation == 'Poche' || operation == 'Copiage') {
+      if (group == 'p') return {'vc': 150, 'feed': 0.08, 'ap': 5.0, 'ae': 10.0, 'd': 16, 'z': 4, 'pitch': 0.0, 'length': 0};
+      if (group == 'm') return {'vc': 100, 'feed': 0.06, 'ap': 4.0, 'ae': 8.0, 'd': 16, 'z': 4, 'pitch': 0.0, 'length': 0};
+      if (group == 'k') return {'vc': 120, 'feed': 0.10, 'ap': 5.0, 'ae': 10.0, 'd': 16, 'z': 4, 'pitch': 0.0, 'length': 0};
+      if (group == 'n') return {'vc': 300, 'feed': 0.12, 'ap': 6.0, 'ae': 12.0, 'd': 16, 'z': 4, 'pitch': 0.0, 'length': 0};
+      if (group == 's') return {'vc': 40, 'feed': 0.04, 'ap': 3.0, 'ae': 6.0, 'd': 16, 'z': 4, 'pitch': 0.0, 'length': 0};
+      if (group == 'h') return {'vc': 60, 'feed': 0.03, 'ap': 2.0, 'ae': 5.0, 'd': 16, 'z': 4, 'pitch': 0.0, 'length': 0};
+    } else if (operation == 'Fraisage de filets') {
+      if (group == 'p') return {'vc': 80, 'feed': 0.05, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 3, 'pitch': 1.5, 'length': 0};
+      if (group == 'm') return {'vc': 50, 'feed': 0.04, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 3, 'pitch': 1.5, 'length': 0};
+      if (group == 'k') return {'vc': 60, 'feed': 0.05, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 3, 'pitch': 1.5, 'length': 0};
+      if (group == 'n') return {'vc': 100, 'feed': 0.06, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 3, 'pitch': 1.5, 'length': 0};
+      if (group == 's') return {'vc': 30, 'feed': 0.03, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 3, 'pitch': 1.5, 'length': 0};
+      if (group == 'h') return {'vc': 40, 'feed': 0.02, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 3, 'pitch': 1.5, 'length': 0};
+    } else if (operation == 'Perçage') {
+      if (group == 'p') return {'vc': 30, 'feed': 0.10, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0, 'length': 20};
+      if (group == 'm') return {'vc': 20, 'feed': 0.08, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0, 'length': 20};
+      if (group == 'k') return {'vc': 40, 'feed': 0.12, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0, 'length': 20};
+      if (group == 'n') return {'vc': 80, 'feed': 0.15, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0, 'length': 20};
+      if (group == 's') return {'vc': 15, 'feed': 0.05, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0, 'length': 20};
+      if (group == 'h') return {'vc': 20, 'feed': 0.04, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 2, 'pitch': 0.0, 'length': 20};
+    } else if (operation == 'Taraudage') {
+      if (group == 'p') return {'vc': 10, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5, 'length': 20};
+      if (group == 'm') return {'vc': 8, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5, 'length': 20};
+      if (group == 'k') return {'vc': 10, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5, 'length': 20};
+      if (group == 'n') return {'vc': 15, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5, 'length': 20};
+      if (group == 's') return {'vc': 5, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5, 'length': 20};
+      if (group == 'h') return {'vc': 6, 'feed': 1.5, 'ap': 0.0, 'ae': 0.0, 'd': 10, 'z': 1, 'pitch': 1.5, 'length': 20};
     }
-    return {'vc': 100, 'feed': 0.1, 'ap': 1.0, 'ae': 10.0, 'd': 40, 'z': 1, 'pitch': 1.5};
+    return {'vc': 100, 'feed': 0.1, 'ap': 1.0, 'ae': 10.0, 'd': 40, 'z': 1, 'pitch': 1.5, 'length': 50};
   }
 
   void _calculate() {
@@ -134,6 +188,7 @@ class _CuttingScreenState extends State<CuttingScreen> {
     final z = double.tryParse(_zController.text) ?? 1;
     final pitch = double.tryParse(_pitchController.text) ?? 0;
     final eta = double.tryParse(_etaController.text) ?? 0.85;
+    final length = double.tryParse(_lengthController.text) ?? 0;
     final kc = _getKc();
 
     if (d > 0) {
@@ -148,19 +203,36 @@ class _CuttingScreenState extends State<CuttingScreen> {
           _vf = _n * feed;
         }
 
-        if (isMilling && ap > 0 && ae > 0) {
+        // Débit copeaux et Puissance selon opération
+        if (isMillingWithApAe && ap > 0 && ae > 0) {
           _q = (ap * ae * _vf) / 1000;
           _power = (kc * _q) / (60000 * eta);
+        } else if (isThreadMilling) {
+          // Fraisage de filets : pas de ap/ae, puissance estimée
+          _q = 0;
+          _power = (kc * feed * _vf * z) / (60000 * eta);
         } else if (isTurning && ap > 0) {
-          _q = ap * feed * vc;
-          _power = (kc * ap * feed * vc) / (60000 * eta);
+          _q = ap * feed * vc; // cm³/min
+          _power = (kc * _q) / (60000 * eta);
+          // Temps d'usinage : T = L / (f × N) en minutes
+          if (length > 0 && feed > 0 && _n > 0) {
+            _time = length / (feed * _n);
+          } else {
+            _time = 0;
+          }
         } else if (isDrilling) {
           final fc = kc * (d / 2) * feed;
           _power = (fc * vc) / (6000 * eta);
           _q = (3.14159 * d * d / 4) * _vf / 1000;
+          if (length > 0 && _vf > 0) {
+            _time = length / _vf;
+          } else {
+            _time = 0;
+          }
         } else {
           _q = 0;
           _power = 0;
+          _time = 0;
         }
       });
     }
@@ -219,32 +291,36 @@ class _CuttingScreenState extends State<CuttingScreen> {
               _buildSectionTitle('COUPE'),
               _buildInputRow('Vc', _vcController, 'm/min', Icons.speed, subtitle: 'Vitesse de coupe'),
               _buildInputRow(feedCode, _feedController, feedUnit, Icons.arrow_forward, subtitle: feedLabel),
-              if (!isDrilling && !isThreading)
+              if (isMillingWithApAe)
                 _buildInputRow('ap', _apController, 'mm', Icons.height, subtitle: 'Profondeur de passe'),
-              if (isMilling)
+              if (isMillingWithApAe)
                 _buildInputRow('ae', _aeController, 'mm', Icons.straighten, subtitle: 'Engagement radial'),
 
               const SizedBox(height: 12),
 
               _buildSectionTitle('OUTIL'),
-              _buildInputRow('D', _dController, 'mm', Icons.circle, subtitle: 'Diamètre'),
-              if (isMilling)
-                _buildInputRow('z', _zController, 'dents', Icons.grid_view, subtitle: 'Nombre de dents'),
-              if (isDrilling)
-                _buildInputRow('z', _zController, 'arêtes', Icons.grid_view, subtitle: "Nombre d'arêtes"),
+              _buildInputRow('D', _dController, 'mm', Icons.circle, subtitle: dLabel),
+              if (isMilling || isDrilling)
+                _buildInputRow('z', _zController, isDrilling ? 'arêtes' : 'dents', Icons.grid_view, 
+                  subtitle: isDrilling ? "Nombre d'arêtes" : 'Nombre de dents'),
               if (isThreading)
                 _buildInputRow('Pas', _pitchController, 'mm', Icons.text_fields, subtitle: 'Pas du filetage'),
               _buildInputRow('η', _etaController, '', Icons.battery_full, subtitle: 'Rendement machine'),
+              if (isTurning || isDrilling)
+                _buildInputRow('L', _lengthController, 'mm', Icons.linear_scale, subtitle: 'Longueur d\'usinage'),
 
               const SizedBox(height: 12),
 
               _buildSectionTitle('RÉSULTATS'),
               _buildResultRow('N', _n.toStringAsFixed(0), 'tr/min', Icons.rotate_right, Colors.blue),
-              _buildResultRow('Vf', _vf.toStringAsFixed(0), 'mm/min', Icons.trending_up, Colors.blue),
+              if (!isTurning)
+                _buildResultRow('Vf', _vf.toStringAsFixed(0), 'mm/min', Icons.trending_up, Colors.blue),
               if (_q > 0)
                 _buildResultRow('Q', _q.toStringAsFixed(1), 'cm³/min', Icons.water_drop, Colors.orange),
               if (_power > 0)
                 _buildResultRow('P', _power.toStringAsFixed(2), 'kW', Icons.flash_on, Colors.red),
+              if (_time > 0)
+                _buildResultRow('T', _time.toStringAsFixed(1), 'min', Icons.timer, Colors.purple),
             ],
           ),
         ],
@@ -261,7 +337,6 @@ class _CuttingScreenState extends State<CuttingScreen> {
     );
   }
 
-  // ✅ UNE SEULE MÉTHODE avec paramètre optionnel
   Widget _buildInputRow(String code, TextEditingController controller, String unit, IconData icon, {String? subtitle}) {
     return Card(
       elevation: 1,
