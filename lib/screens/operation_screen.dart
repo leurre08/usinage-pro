@@ -25,13 +25,13 @@ class OperationScreen extends StatelessWidget {
             'Chariotage', 'Dressage', 'Saignée', 'Gorge', 'Filetage', 'Profil'
           ]),
           _buildGroup(context, 'Fraisage', Icons.grid_view, const Color(0xFF2C5F8A), [
-            'Surfaçage', 'Rainurage', 'Pochage', 'Épaulement', 'Copiage'
+            'Surfaçage', 'Rainurage', 'Poche', 'Copiage', 'Fraisage de filets'
           ]),
           _buildGroup(context, 'Perçage', Icons.center_focus_strong, const Color(0xFF2C5F8A), [
-            'Perçage', 'Lamage', 'Chambrage', 'Alésage'
+            'Perçage'
           ]),
           _buildGroup(context, 'Taraudage', Icons.text_fields, const Color(0xFF2C5F8A), [
-            'Taraudage', 'Lamage de fond', 'Fraisage de filets'
+            'Taraudage'
           ]),
         ],
       ),
@@ -60,7 +60,7 @@ class OperationScreen extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => CuttingScreen(
                       operationName: op,
-                      materialId: materialId,  // ✅ Ajouté !
+                      materialId: materialId,
                       materialName: materialName,
                     ),
                   ),
